@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBCT Viewer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%234aa3ff'/></svg>" />
+  </head>
+  <body>
+    <header id="topbar">
+      <div class="brand">CBCT <span>WebGL</span></div>
+      <div class="group" id="tools" role="toolbar" aria-label="Mouse tool">
+        <button data-tool="crosshair" class="active" title="Crosshair: click/drag to navigate (C)">✛ Navigate</button>
+        <button data-tool="window" title="Window/level: drag (W) — right-drag anywhere">◐ W/L</button>
+        <button data-tool="pan" title="Pan (P) — shift- or middle-drag anywhere">✥ Pan</button>
+        <button data-tool="zoom" title="Zoom (Z) — ctrl/⌘ + wheel anywhere">⌕ Zoom</button>
+        <button data-tool="measure" title="Measure distance (M)">📏 Measure</button>
+      </div>
+      <div class="group">
+        <button id="btn-clear-measure" title="Remove all measurements">Clear measures</button>
+        <button id="btn-reset" title="Reset zoom, pan and 3D camera (R)">Reset views</button>
+        <button id="btn-shot" title="Save a PNG screenshot (S)">Screenshot</button>
+      </div>
+      <div class="spacer"></div>
+      <div id="load-status"></div>
+    </header>
+
+    <main>
+      <aside id="sidebar">
+        <section>
+          <h2>Study</h2>
+          <select id="series-select" hidden></select>
+          <dl id="study-info"></dl>
+        </section>
+
+        <section>
+          <h2>Slices</h2>
+          <div class="presets" id="window-presets"></div>
+          <label>Level <output id="wc-out"></output><input type="range" id="wc" step="1" /></label>
+          <label>Width <output id="ww-out"></output><input type="range" id="ww" step="1" /></label>
+          <label class="row"><input type="checkbox" id="invert" /> Invert</label>
+          <label>Slab thickness <output id="slab-out">0 mm</output><input type="range" id="slab" min="0" max="40" step="0.5" value="0" /></label>
+          <label>Slab mode
+            <select id="slab-mode">
+              <option value="0">MIP (max)</option>
+              <option value="1">Average</option>
+              <option value="2">MinIP (min)</option>
+            </select>
+          </label>
+          <label>Slice resolution
+            <select id="mpr-res">
+              <option value="1">Full (native)</option>
+              <option value="2">Half</option>
+            </select>
+          </label>
+        </section>
+
+        <section>
+          <h2>3D</h2>
+          <div class="presets" id="vr-presets"></div>
+          <label>Render mode
+            <select id="vr-mode">
+              <option value="0">Volume (composite)</option>
+              <option value="1">MIP (x-ray)</option>
+              <option value="2">Surface (iso)</option>
+            </select>
+          </label>
+          <div data-mode="0">
+            <label>Threshold low <output id="tf-lo-out"></output><input type="range" id="tf-lo" step="10" /></label>
+            <label>Threshold high <output id="tf-hi-out"></output><input type="range" id="tf-hi" step="10" /></label>
+            <label>Opacity <output id="opacity-out"></output><input type="range" id="opacity" min="0.02" max="1" step="0.01" /></label>
+          </div>
+          <div data-mode="2">
+            <label>Iso level <output id="iso-out"></output><input type="range" id="iso" step="10" /></label>
+          </div>
+          <label>Quality
+            <select id="quality">
+              <option value="0.75">Fast</option>
+              <option value="1.5" selected>Normal</option>
+              <option value="3">High</option>
+            </select>
+          </label>
+          <label>3D resolution
+            <select id="vr-res">
+              <option value="2" selected>Half (fast)</option>
+              <option value="1">Full (needs a strong GPU)</option>
+              <option value="3">Third</option>
+            </select>
+          </label>
+          <div class="crop">
+            <span>Crop</span>
+            <label>L–R <input type="range" data-crop="0" data-end="min" min="0" max="1" step="0.005" value="0" /><input type="range" data-crop="0" data-end="max" min="0" max="1" step="0.005" value="1" /></label>
+            <label>A–P <input type="range" data-crop="1" data-end="min" min="0" max="1" step="0.005" value="0" /><input type="range" data-crop="1" data-end="max" min="0" max="1" step="0.005" value="1" /></label>
+            <label>I–S <input type="range" data-crop="2" data-end="min" min="0" max="1" step="0.005" value="0" /><input type="range" data-crop="2" data-end="max" min="0" max="1" step="0.005" value="1" /></label>
+          </div>
+          <div class="presets" id="cam-presets">
+            <button data-cam="front">Front</button>
+            <button data-cam="left">Left</button>
+            <button data-cam="right">Right</button>
+            <button data-cam="top">Top</button>
+            <button data-cam="bottom">Bottom</button>
+            <button data-cam="back">Back</button>
+          </div>
+        </section>
+
+        <section class="help">
+          <h2>Controls</h2>
+          <ul>
+            <li><b>Wheel</b> scroll slices · <b>⌘/Ctrl+wheel</b> zoom</li>
+            <li><b>Right-drag</b> window/level · <b>Shift/middle-drag</b> pan</li>
+            <li><b>Double-click</b> a view to maximise</li>
+            <li><b>3D:</b> drag orbit · right-drag pan · wheel zoom</li>
+            <li><b>Keys:</b> C W P Z M tools · 1–4 maximise · R reset · S screenshot · ↑↓ slice</li>
+          </ul>
+          <p class="disclaimer">Not for diagnostic use.</p>
+        </section>
+      </aside>
+
+      <section id="stage" data-tool="crosshair">
+        <canvas id="gl"></canvas>
+        <div id="views" data-max="">
+          <div class="view" data-view="axial"></div>
+          <div class="view" data-view="coronal"></div>
+          <div class="view" data-view="sagittal"></div>
+          <div class="view" data-view="3d"></div>
+        </div>
+        <canvas id="overlay"></canvas>
+        <div id="message" hidden></div>
+      </section>
+    </main>
+
+    <footer id="status">
+      <span id="status-cursor"></span>
+      <span id="status-value"></span>
+      <span id="status-hover"></span>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

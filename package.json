@@ -1,0 +1,36 @@
+{
+  "name": "cbct-webgl-viewer",
+  "version": "0.1.0",
+  "description": "Local WebGL2 viewer for dental CBCT DICOM exports (patient CDs/USB sticks). Run it inside the export folder.",
+  "keywords": ["dicom", "cbct", "ct", "webgl", "volume-rendering", "mpr", "dental", "viewer"],
+  "repository": { "type": "git", "url": "git+https://github.com/sholsinger/cbct-webgl-viewer.git" },
+  "homepage": "https://github.com/sholsinger/cbct-webgl-viewer#readme",
+  "type": "module",
+  "bin": {
+    "cbct-viewer": "bin/cbct-viewer.js"
+  },
+  "files": [
+    "bin",
+    "src/server",
+    "dist/web"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node bin/cbct-viewer.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "author": "Steve Holsinger (https://github.com/sholsinger)",
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}
